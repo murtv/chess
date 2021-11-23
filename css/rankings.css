@@ -1,0 +1,19 @@
+.table-container {
+    max-height: 500px;
+    overflow-y: scroll;
+}
+
+table {
+    width: 100%;
+}
+
+th {
+    position: sticky;
+    top: 0;
+    background-color: white;
+}
+
+td {
+    height: 35px;
+    border-bottom: 1px solid lightgray;
+}

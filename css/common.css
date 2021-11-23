@@ -1,0 +1,119 @@
+html, body {
+    margin: 0;
+    font-family: 'Courier New', Courier, monospace;
+    background-color: floralwhite;
+}
+
+.nav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: white;
+    height: 62px;
+    border: 1px solid lightgray;
+}
+
+.nav-item {
+    margin: 0px 24px;
+    font-size: 18px;
+    font-weight: bold;
+    transition-duration: .1s;
+    text-decoration: none;
+    color: black;
+}
+
+.nav-item:hover {
+    opacity: .6;
+}
+
+.logo {
+    font-weight: bold;
+    font-style: italic;
+    font-size: 32px;
+    margin-top: 72px;
+    margin-bottom: 32px;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    align-items: center;
+}
+
+.container-dir-row {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+}
+
+.container-right {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    align-items: flex-end;
+}
+
+.vert-space-120 {
+    height: 120px;
+}
+
+.vert-space-24 {
+    height: 24px;
+}
+
+.card {
+    width: 400px;
+    border-radius: 8px;
+    padding: 24px;
+    background-color: white;
+    border: 1px solid lightgray;
+}
+
+.card-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 24px 0px;
+}
+
+.field-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    margin: 8px 0px;
+}
+
+.field-label {
+    font-size: 14px;
+}
+
+.field {
+    height: 28px;
+    border-radius: 4px;
+    border: 1px solid gray;
+}
+
+.button {
+    height: 35px;
+    width: 90px;
+    border: none;
+    border-radius: 4px;
+    background-color: black;
+    color: white;
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+    margin: 12px 0px;
+}
+
+.error-text {
+    color: maroon;
+    margin: 12px 0px;
+}
+
+.section-title {
+    align-self: flex-start;
+    font-size: 18px;
+    font-weight: 600;
+}

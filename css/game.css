@@ -1,0 +1,10 @@
+.game-container {
+    display: flex;
+    align-items: flex-start;
+}
+
+.vert-stack {
+    display: flex;
+    flex-direction: column;
+    margin: 20px;
+}

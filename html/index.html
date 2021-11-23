@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Login</title>
+
+    <link href="../css/common.css" rel="stylesheet">
+
+    <script src='../js/common.js'></script>
+    <script src='../js/accounts.js'></script>
+    <script src='../js/validation.js'></script>
+    <script src='../js/login.js'></script>
+</head>
+
+<body>
+    <header class="nav">
+        <a class="nav-item" href="./index.html">Login</a>
+        <a class="nav-item" href="./signup.html">Sign Up</a>
+        <a class="nav-item" href="./rankings.html">Rankings</a>
+    </header>
+
+    <main>
+        <div class="container">
+            <div class="logo">Chess</div>
+
+            <div class="card">
+                <div class="container">
+                    <div class="card-title">Login</div>
+                </div>
+
+                <div class="container">
+                    <div class="section-title">Player 1</div>
+                    
+                    <div class="field-container">
+                        <label class="field-label" for="email">Email</label>
+                        <input class="field" type="text" id='email1' name='email1' placeholder="Email" />
+                    </div>
+
+                    <div class="field-container">
+                        <label class="field-label" for='password'>Password</label>
+                        <input class="field" type="password" id='password1' name="password1" placeholder="Password" />
+                    </div>
+
+                    <div class="vert-space-24"></div>
+
+                    <div class="section-title">Player 2</div>
+
+                    <div class="field-container">
+                        <label class="field-label" for="email">Email</label>
+                        <input class="field" type="text" id='email2' name='email2' placeholder="Email" />
+                    </div>
+
+                    <div class="field-container">
+                        <label class="field-label" for='password'>Password</label>
+                        <input class="field" type="password" id='password2' name="password2" placeholder="Password" />
+                    </div>
+
+                    <div id="error" class="error-text" hidden></div>
+
+                    <div class="container-right">
+                        <button class="button" onclick="handleLogin();">Login</button>
+                    </div>
+                </div>
+            </div>
+    </main>
+</body>
+
+</html>
