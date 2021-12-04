@@ -1,20 +1,49 @@
-const signUpSchema = {
-    name: [required],
-    email: [required, isEmail],
-    phone: [required, isNumber, minLength(10)],
-    password: [required, minLength(8)],
+// rules for sign up validation (see validation.js)
+const signUpRules = {
+    name: {
+        label: 'Name',
+        rules: [
+            isRequired()
+        ]
+    },
+    email: {
+        label: 'Email',
+        rules: [
+            isRequired(),
+            isEmail()
+        ]
+    },
+    phone: {
+        label: 'Phone',
+        rules: [
+            isRequired(),
+            isNumber(),
+            isMinLength({ min: 10 })
+        ],
+    },
+    password: {
+        label: 'Password',
+        rules: [
+            isRequired(),
+            isMinLength({ min: 8 })
+        ]
+    },
 };
 
 function handleSignUp() {
     try {
-        const input = fetchFieldValues(
+        // fetch form values
+        const fields = fetchFields(
             'name', 'email', 'phone', 'password');
 
-        validate(input, signUpSchema);
-        createAccount(input);
+        // vaidate fields against the sign up schema
+        validate(fields, signUpRules);
 
+        createAccount(fields);
+
+        // if account creation is successful, send user to the login page
         window.location = 'index.html';
     } catch (error) {
-        showFormError(error.message);
+        showFormError(error.message); // show error div
     }
 }

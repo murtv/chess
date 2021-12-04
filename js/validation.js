@@ -1,37 +1,47 @@
-const required = {
-    validate: (input) => {
-        if (input === undefined) return false;
-        if (input.trim() === '') return false;
+function isRequired(options = {}) {
+    const { error } = options;
 
-        return true;
-    },
-    errorMessage: (field) => `${field} is must not be empty.`
-};
-
-const isEmail = {
-    validate: (input) =>
-        new RegExp("[^@ \t\r\n]+@[^@ \t\r\n]+\.[^@ \t\r\n]+")
-            .test(input),
-    errorMessage: (field) => `${field} must be valid.`
-};
-
-const isNumber = {
-    validate: (input) => !isNaN(input.trim()),
-    errorMessage: (field) => `${field} must be a number.`
-};
-
-const minLength = (num) => {
     return {
-        validate: (input) => input.length >= num,
-        errorMessage: (field) => `${field} must be at least ${num} characters long.`
+        isValid: (value) => !isStringEmpty(value),
+        getError: (label) => error || `${label} is empty.`
     };
-};
+}
 
-function validate(inputData, schema) {
-    for (const field of Object.keys(inputData)) {
-        for (const rule of schema[field]) {
-            if (!rule.validate(inputData[field])) {
-                throw Error(rule.errorMessage(field));
+function isEmail(options = {}) {
+    const { error } = options;
+
+    return {
+        isValid: (value) => emailRegex.test(value),
+        getError: (label) => error || `${label} is not valid.`
+    };
+}
+
+function isNumber(options = {}) {
+    const { error } = options;
+
+    return {
+        isValid: (value) => !isNaN(value.trim()),
+        getError: (label) => error || `${label} is not a number.`
+    };
+}
+
+function isMinLength(options = {}) {
+    const { min, error } = options;
+
+    return {
+        isValid: (value) => value.length >= min,
+        getError: (label) => error || `${label} must be at least ${min} chars long.`
+    };
+}
+
+function validate(fields, schema) {
+    // for every field, every rule must pass
+    for (const [field, value] of Object.entries(fields)) {
+        const { label, rules } = schema[field];
+
+        for (const rule of rules) {
+            if (!rule.isValid(value)) {
+                throw Error(rule.getError(label));
             }
         }
     }
