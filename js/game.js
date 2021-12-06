@@ -40,6 +40,54 @@ const squareEquals = (square1, square2) =>
       square1[0] === square2[0] &&
       square1[1] === square2[1];
 
+class Move {
+    constructor(type, piece, to) {
+        this.type = type;
+        this.piece = piece;
+        this.to = to;
+    }
+
+    clone() {
+        return new Move(
+            this.type,
+            this.piece.clone(),
+            this.to.slice()
+        );
+    }
+}
+
+class EnPassantMove extends Move {
+    constructor(piece, to, enemyPawn) {
+        super(ENPASSANT, piece, to);
+        this.enemyPawn = enemyPawn;
+    }
+
+    clone() {
+        return new EnPassantMove(
+            this.piece.clone(),
+            this.to.slice(),
+            this.enemyPawn.clone()
+        );
+    }
+}
+
+class CastleMove extends Move {
+    constructor(piece, to, rookFrom, rookTo) {
+        super(CASTLE, piece, to);
+        this.rookFrom = rookFrom;
+        this.rookTo = rookTo;
+    }
+
+    clone() {
+        return new CastleMove(
+            this.piece.clone(),
+            this.to.slice(),
+            this.rookFrom.slice(),
+            this.rookTo.slice()
+        );
+    }
+}
+
 // base class for a piece
 class Piece {
     constructor(type, color, square) {
@@ -47,6 +95,8 @@ class Piece {
 	    this.color = color;
 	    this.square = square;
     }
+
+    onMove() {}
 }
 
 class Pawn extends Piece {
@@ -82,21 +132,21 @@ class Pawn extends Piece {
 	    const moves = [];
 
 	    if (!board.findPiece(squares.forward)) {
-	        moves.push({ type: SIMPLE, to: squares.forward });
+            moves.push(new Move(SIMPLE, this, squares.forward));
 
 	        if (!this.hasMoved && !board.findPiece(squares.forward2)) {
-		        moves.push({ type: SIMPLE, to: squares.forward2 });
+		        moves.push(new Move(SIMPLE, this, squares.forward2));
 	        }
 	    }
 
 	    const forwardLeftPiece = board.findPiece(squares.forwardLeft);
 	    if (forwardLeftPiece && forwardLeftPiece.color !== this.color) {
-	        moves.push({ type: SIMPLE, to: squares.forwardLeft });
+	        moves.push(new Move(SIMPLE, this, squares.forwardLeft));
 	    }
 
 	    const forwardRightPiece = board.findPiece(squares.forwardRight);
 	    if (forwardRightPiece && forwardRightPiece.color !== this.color) {
-	        moves.push({ type: SIMPLE, to: squares.forwardRight });
+	        moves.push(new Move(SIMPLE, this, squares.forwardRight));
 	    }
 
 	    const leftPiece = board.findPiece(squares.left);
@@ -104,8 +154,8 @@ class Pawn extends Piece {
 	        leftPiece.color !== this.color &&
 	        leftPiece.moved2SquaresLastTurn &&
 	        !forwardLeftPiece) {
-	        moves.push({ type: ENPASSANT, to: squares.forwardLeft,
-                         enemyPiece: leftPiece });
+            moves.push(new EnPassantMove(
+                this, squares.forwardLeft, leftPiece));
 	    }
 
 	    const rightPiece = board.findPiece(squares.right);
@@ -113,8 +163,8 @@ class Pawn extends Piece {
 	        rightPiece.color !== this.color &&
 	        rightPiece.moved2SquaresLastTurn &&
 	        !forwardRightPiece) {
-	        moves.push({ type: ENPASSANT, to: squares.forwardRight,
-                         enemyPiece: rightPiece });
+            moves.push(new EnPassantMove(
+                this, squares.forwardRight, rightPiece));
 	    }
 
 	    return this.withPromotionMoves(moves);
@@ -125,11 +175,21 @@ class Pawn extends Piece {
 	        const rank = move.to[1];
 
 	        if (rank === 1 || rank === 8) {
-		        return { ...move, type: PROMOTION };
+                move.type = PROMOTION;
 	        }
 
 	        return move;
 	    });
+    }
+
+    onMove(move) {
+        this.hasMoved = true;
+
+        if (Math.abs(this.square[1] - move.to[1]) === 2) {
+            this.moved2SquaresLastTurn = true;
+        } else {
+            this.moved2SquaresLastTurn = false;
+        }
     }
 
     clone() {
@@ -165,7 +225,7 @@ class King extends Piece {
 	        [file - 1, rank + 1],
 	    ]
 	          .filter(square => board.canOccupy(square, this.color))
-	          .map((square) => ({ type: SIMPLE, to: square }));
+              .map((square) => new Move(SIMPLE, this, square));
 
 	    const castlingMoves = this.getCastlingMoves(board);
 
@@ -173,7 +233,7 @@ class King extends Piece {
     }
 
     getCastlingMoves(board, squares) {
-        if (this.hasMoves) return [];
+        if (this.hasMoved) return [];
 
         const [file, rank] = this.square;
 
@@ -188,12 +248,12 @@ class King extends Piece {
 	        kingSideRook &&
 	        !kingSideRook.hasMoved) {
 
-	        moves.push({
-		        type: CASTLE,
-		        to: [file + 2, rank],
-		        rookFrom: [file + 3, rank],
-		        rookTo: [file + 1, rank]
-	        });
+            moves.push(new CastleMove(
+                this,
+                [file + 2, rank],
+                [file + 3, rank],
+                [file + 1, rank]
+            ));
 	    }
 
 	    const queenSidePiece = board.findPiece([file - 1, rank]);
@@ -207,15 +267,19 @@ class King extends Piece {
 	        queenSideRook &&
 	        !queenSideRook.hasMoved) {
 
-	        moves.push({
-		        type: CASTLE,
-		        to: [file - 2, rank],
-		        rookFrom: [file - 4, rank],
-		        rookTo: [file - 1, rank]
-	        });
+            moves.push(new CastleMove(
+                this,
+                [file - 2, rank],
+                [file - 4, rank],
+                [file - 1, rank]
+            ));
 	    }
 
 	    return moves;
+    }
+
+    onMove(move) {
+        this.hasMoved = true;
     }
 
     clone() {
@@ -257,7 +321,7 @@ let lineMoveMixin = Base => class extends Base {
 
 
 	    return squares
-	        .map((square) => ({ type: SIMPLE, to: square }));
+	        .map((square) => new Move(SIMPLE, piece, square));
     }
 }
 
@@ -373,7 +437,7 @@ class Knight extends Piece {
 	        [file + 2, rank - 1],
 	    ]
 	        .filter(square => board.canOccupy(square, this.color))
-	        .map((square) => ({ type: SIMPLE, to: square }));
+	        .map((square) => new Move(SIMPLE, this, square));
     }
 
     clone() {
@@ -394,6 +458,10 @@ class Rook extends crossMoveMixin(lineMoveMixin(Piece)) {
 	    return this.crossMoves(board);
     }
 
+    onMove() {
+        this.hasMoved = true;
+    }
+
     clone() {
 	    const copy = new Rook(
 	        this.color,
@@ -412,65 +480,70 @@ class Board {
         this.moveHistory = [];
     }
 
-    removePiece(piece) {
-	    this.pieces.splice(this.pieces.indexOf(piece), 1);
-	    this.removedPieces.push(piece);
+    removePiece(piece, addToRemovedPieces = false) {
+        const pieceIndex = this.pieces.indexOf(piece);
+	    this.pieces.splice(pieceIndex, 1);
+
+        if (addToRemovedPieces) {
+            this.removedPieces.push(piece);
+        }
     }
 
     getLegalMoves(piece) {
         return piece.getMoves(this)
-		    .filter((move) => !this.moveResultsInCheck(piece, move));
+		    .filter((move) => !this.moveResultsInCheck(move));
     }
 
-    applyMove(piece, move) {
-        switch (move.type) {
-        case SIMPLE:
-            const pieceOnTo = this.findPiece(move.to);
-	        if (pieceOnTo && pieceOnTo.color !== piece.color) {
-		        this.removePiece(pieceOnTo);
-	        }
+    applyMove(move) {
+        const { type, piece, to } = move;
 
-	        this.pieces
-		        .filter((piece) => piece.type === PAWN)
-		        .forEach((piece) => {
-		            piece.moved2SquaresLastTurn = false;
-		        });
-
-	        if (piece.type === PAWN &&
-		        Math.abs(piece.square[1] - move.to[1]) === 2) {
-		        piece.moved2SquaresLastTurn = true;
-	        }
-            break;
-        case CASTLE:
-	        const rook = this.findPiece(move.rookFrom);
+        if (type === CASTLE) {
+            const rook = this.findPiece(move.rookFrom);
 	        rook.square = move.rookTo;
-            break;
-        case ENPASSANT:
-	        this.removePiece(move.enemyPiece);
-            break;
-        case PROMOTION:
+        } else if (type === ENPASSANT) {
+	        this.removePiece(move.enemyPawn, true);
+        } else if (type === PROMOTION) {
             this.removePiece(piece);
 	        this.pieces.push(new Queen(piece.color, move.to));
-            break;
-        default: break;
         }
 
-	    if (piece.type === PAWN ||
-	        piece.type === KING ||
-	        piece.type === ROOK) {
-	        piece.hasMoved = true;
-	    }
-
-        this.moveHistory.push({ from: piece.square, to: move.to });
-	    piece.square = move.to;
+        this.recordMove(move);
+        this.movePiece(move);
     }
 
-    moveResultsInCheck(piece, move) {
-	    const copy = this.clone();
-	    const copyPiece = copy.findPiece(piece.square);
-	    copy.applyMove(copyPiece, move);
+    recordMove(move) {
+        const { piece } = move;
 
-	    return copy.isKingInCheck(piece.color);
+        this.moveHistory.push({
+            type: move.type,
+            from: piece.square.slice(),
+            to: move.to
+        });
+    }
+
+    movePiece(move) {
+        const { piece } = move;
+
+        piece.onMove(move);
+
+        const pieceOnTo = this.findPiece(move.to);
+	    if (pieceOnTo && pieceOnTo.color !== piece.color) {
+		    this.removePiece(pieceOnTo, true);
+	    }
+
+	    move.piece.square = move.to;
+    }
+
+    moveResultsInCheck(move) {
+        const moveCopy = move.clone();
+        const pieceCopy = moveCopy.piece;
+        const boardCopy = this.clone();
+
+        boardCopy.removePiece(pieceCopy.square);
+        boardCopy.pieces.push(pieceCopy);
+
+	    boardCopy.applyMove(moveCopy);
+	    return boardCopy.isKingInCheck(pieceCopy.color);
     }
 
     isKingInCheck(color) {
@@ -478,7 +551,7 @@ class Board {
 	        .filter((piece) => piece.color !== color)
 	        .some((piece) => piece
 		          .getMoves(this)
-		          .some((move) => {
+                  .some((move) => {
 		              const foundPiece = this.findPiece(move.to);
 
                       if (foundPiece &&
@@ -497,14 +570,14 @@ class Board {
 	    return this.pieces
 	        .filter((piece) => piece.color === color)
 	        .every((piece) => piece.getMoves(this)
-		           .every((move) => this.moveResultsInCheck(piece, move)));
+		           .every((move) => this.moveResultsInCheck(move)));
     }
 
     isInStaleMate(color) {
 	    return this.pieces
 	        .filter((piece) => piece.color === color)
 	        .every((piece) => piece.getMoves(this)
-		           .filter((move) => !this.moveResultsInCheck(piece, move))
+		           .filter((move) => !this.moveResultsInCheck(move))
 		           .length === 0);
     }
 
@@ -636,7 +709,7 @@ class Game {
 	        const selectedMove = this.findLegalMove(clickedSquare);
 
 	        if (selectedMove) {
-		        this.board.applyMove(this.selectedPiece, selectedMove);
+		        this.board.applyMove(selectedMove);
 		        this.switchTurn();
 	        }
 	    }
@@ -731,7 +804,7 @@ class Game {
 	        this.board.pieces,
 	        this.legalMoves.map((move) => move.to),
             overrideColors,
-	        this.currentTurn
+	        this.currentTurn === WHITE
 	    );
     }
 }
@@ -749,22 +822,22 @@ class Drawer {
 	    this.canvas.width = BOARD_SIDE_LENGTH;
     }
 
-    draw(pieces, legalMoves, overrideColors, currentTurn) {
+    draw(pieces, legalMoveSquares, overrideColors, isFlipped) {
 	    const { width, height } = canvas;
 
 	    this.context.clearRect(0, 0, width, height);
 
-	    this.drawBoard(currentTurn, overrideColors);
-        this.drawCoords(currentTurn);
-	    this.drawPieces(pieces, currentTurn);
-	    this.drawLegalMoveCircles(legalMoves, currentTurn);
+	    this.drawBoard(isFlipped, overrideColors);
+        this.drawCoords(isFlipped);
+	    this.drawPieces(pieces, isFlipped);
+	    this.drawLegalMoveCircles(legalMoveSquares, isFlipped);
     }
 
-    drawBoard(currentTurn, overrideColors) {
+    drawBoard(isFlipped, overrideColors) {
 	    for (let i = 0; i <= 8; i++) {
 	        for (let j = 0; j <= 8; j++) {
 
-                const square = currentTurn === WHITE ?
+                const square = isFlipped ?
                       [j + 1, 8 - i] :
                       [8 - j, i + 1];
 
@@ -794,12 +867,12 @@ class Drawer {
 	    }
     }
 
-    drawCoords(currentTurn) {
+    drawCoords(isFlipped) {
         this.context.fillStyle = COORDS_COLOR;
         this.context.font = 'bold 24px sans-serif';
 
         for (let i = 1; i <= 8; i++) {
-            if (currentTurn === WHITE) {
+            if (isFlipped) {
                 this.context.fillText(`${9 - i}`, 0, (i * SQUARE_SIDE_LENGTH) - 8);
             } else {
                 this.context.fillText(`${i}`, 0, (i * SQUARE_SIDE_LENGTH) - 8);
@@ -807,24 +880,28 @@ class Drawer {
         }
 
         for (let i = 1; i <= 8; i++) {
-            if (currentTurn === WHITE) {
-                this.context.fillText(`${ALPHABET_STRING.charAt(i - 1)}`, (i * SQUARE_SIDE_LENGTH) - 24, BOARD_SIDE_LENGTH - 8);
+            if (isFlipped) {
+                this.context.fillText(`${ALPHABET_STRING.charAt(i - 1)}`,
+                                      (i * SQUARE_SIDE_LENGTH) - 24,
+                                      BOARD_SIDE_LENGTH - 8);
             } else {
-                this.context.fillText(`${ALPHABET_STRING.charAt(8 - i)}`, (i * SQUARE_SIDE_LENGTH) - 24, BOARD_SIDE_LENGTH - 8);
+                this.context.fillText(`${ALPHABET_STRING.charAt(8 - i)}`,
+                                      (i * SQUARE_SIDE_LENGTH) - 24,
+                                      BOARD_SIDE_LENGTH - 8);
             }
         }
     }
 
-    drawPieces(pieces, currentTurn) {
+    drawPieces(pieces, isFlipped) {
 	    pieces.forEach((piece) => {
 	        const { type, color, square } = piece;
 	        const [file, rank] = square;
 
-	        const x = currentTurn === WHITE ?
+	        const x = isFlipped ?
 		          (file - 1) * SQUARE_SIDE_LENGTH :
 		          (8 - file) * SQUARE_SIDE_LENGTH;
 
-	        const y = currentTurn === WHITE ?
+	        const y = isFlipped ?
 		          (8 - rank) * SQUARE_SIDE_LENGTH :
 		          (rank - 1) * SQUARE_SIDE_LENGTH;
 
@@ -838,15 +915,15 @@ class Drawer {
 	    });
     }
 
-    drawLegalMoveCircles(legalMoves, currentTurn) {
-	    legalMoves.forEach((square) => {
+    drawLegalMoveCircles(legalMoveSquares, isFlipped) {
+	    legalMoveSquares.forEach((square) => {
 	        const [file, rank] = square;
 
-	        const x = currentTurn === WHITE ?
+	        const x = isFlipped ?
 		          (file - 1) * SQUARE_SIDE_LENGTH :
 		          (8 - file) * SQUARE_SIDE_LENGTH;
 
-	        const y = currentTurn === WHITE ?
+	        const y = isFlipped ?
 		          (8 - rank) * SQUARE_SIDE_LENGTH :
 		          (rank - 1) * SQUARE_SIDE_LENGTH;
 
