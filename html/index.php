@@ -19,7 +19,6 @@
                 card('Login',
                     container(
                         sectionTitle('Player 1') .
-
                         field('email1', 'Email') .
                         field('password1', 'Password', 'password') .
 
