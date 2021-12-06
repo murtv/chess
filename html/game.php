@@ -1,3 +1,9 @@
+<?php
+include('../php/common.php');
+
+html(head() . body(array('onload', 'init();')))
+?>
+
 <!DOCTYPE html>
 <html>
 

@@ -9,11 +9,13 @@
         stylesheet('../css/common.css') .
         stylesheet('../css/rankings.css') .
         script('../js/rankings.js')) .
-    body (
+    body(
+        array(),
         nav() .
         main(
             container(
             logo() .
                 card('Rankings',
-                    table(array('Rank', 'Name', 'Score')))))));
+                    table('table-container',
+                          array('Rank', 'Name', 'Score')))))));
  ?>

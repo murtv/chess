@@ -9,8 +9,7 @@
         script('../js/common.js') .
         script('../js/accounts.js') .
         script('../js/validation.js') .
-        script('../js/signup.js')
-        ) .
+        script('../js/signup.js')) .
     body(
         array(),
         nav() .
@@ -22,9 +21,10 @@
                         field('name', 'Name') .
                         field('email', 'Email') .
                         field('phone', 'Phone') .
-                        field('password', 'Password')
-                        ) .
+                        field('password', 'Password')) .
+
                         error() .
+
                         containerRight(
-                        button('Sign Up', 'handleSignUp();')))))));
+                            button('Sign Up', 'handleSignUp();')))))));
  ?>

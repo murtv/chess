@@ -10,7 +10,8 @@
         script('../js/accounts.js') .
         script('../js/validation.js') .
         script('../js/login.js')) .
-    body (
+    body(
+        array(),
         nav() .
         main(
             container(
@@ -24,7 +25,7 @@
 
                         space() .
 
-                        sectionTitle('Player 3') .
+                        sectionTitle('Player 2') .
                         field('email2', 'Email') .
                         field('password2', 'Password', 'password') .
 

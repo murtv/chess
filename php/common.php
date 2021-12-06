@@ -1,5 +1,4 @@
-
- <?php
+<?php
 
 function nav() {
     $links = array(
