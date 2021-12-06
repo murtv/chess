@@ -107,11 +107,11 @@ function title($content) {
     return tag('title', array(), $content);
 }
 
-function stylesheet($href) {
+function css($href) {
     return "<link href='$href' rel='stylesheet'>";
 }
 
-function script($src) {
+function js($src) {
     return tag('script', array('src', $src), "");
 }
 

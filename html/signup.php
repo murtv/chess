@@ -5,11 +5,11 @@
  html(
     head(
         title('Sign Up') .
-        stylesheet('../css/common.css') .
-        script('../js/common.js') .
-        script('../js/accounts.js') .
-        script('../js/validation.js') .
-        script('../js/signup.js')) .
+        css('../css/common.css') .
+        js('../js/common.js') .
+        js('../js/accounts.js') .
+        js('../js/validation.js') .
+        js('../js/signup.js')) .
     body(
         array(),
         nav() .

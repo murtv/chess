@@ -1,4 +1,3 @@
-
 <?php
  include('../php/common.php');
 
@@ -6,9 +5,9 @@
  html(
     head(
         title('Rankings') .
-        stylesheet('../css/common.css') .
-        stylesheet('../css/rankings.css') .
-        script('../js/rankings.js')) .
+        css('../css/common.css') .
+        css('../css/rankings.css') .
+        js('../js/rankings.js')) .
     body(
         array(),
         nav() .
