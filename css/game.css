@@ -3,8 +3,41 @@
     align-items: flex-start;
 }
 
+.row-stack {
+    display: flex;
+    margin-top: 12px;
+    margin-bottom: 32px;
+}
+
+.bold-text {
+    font-size: 19px;
+    font-weight: bold;
+}
+
 .vert-stack {
     display: flex;
     flex-direction: column;
     margin: 20px;
+}
+
+.captured-piece {
+    position: relative;
+}
+
+.number-tag {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 12px;
+    background-color: black;
+    position: absolute;
+    top: -4px;
+    right: -4px;
+}
+
+.number-tag-text {
+    color: white;
+    font-weight: bold;
 }

@@ -24,8 +24,8 @@ const SQUARE_SIDE_LENGTH = BOARD_SIDE_LENGTH / 8;
 
 // square colors
 const WHITE_SQUARE_COLOR = 'lightgrey';
-const BLACK_SQUARE_COLOR = 'maroon';
-const LAST_MOVE_COLOR = 'yellow';
+const BLACK_SQUARE_COLOR = '#3A3B3C';
+const LAST_MOVE_COLOR = '#808000';
 const SELECT_PIECE_COLOR = 'lightblue';
 
 const COORDS_COLOR = 'black';
@@ -504,7 +504,9 @@ class Board {
 	        this.removePiece(move.enemyPawn, true);
         } else if (type === PROMOTION) {
             this.removePiece(piece);
-	        this.pieces.push(new Queen(piece.color, move.to));
+	        this.pieces.push(new Queen(piece.color, to));
+
+            console.log(this.pieces);
         }
 
         this.recordMove(move);
@@ -535,15 +537,13 @@ class Board {
     }
 
     moveResultsInCheck(move) {
-        const moveCopy = move.clone();
-        const pieceCopy = moveCopy.piece;
+        const { piece } = move;
+
         const boardCopy = this.clone();
+        const pieceCopy = boardCopy.findPiece(piece.square);
 
-        boardCopy.removePiece(pieceCopy.square);
-        boardCopy.pieces.push(pieceCopy);
-
-	    boardCopy.applyMove(moveCopy);
-	    return boardCopy.isKingInCheck(pieceCopy.color);
+	    boardCopy.applyMove(move.clone());
+	    return boardCopy.isKingInCheck(piece.color);
     }
 
     isKingInCheck(color) {
@@ -679,6 +679,10 @@ class Game {
 	    window.onclick = (event) => {
 	        this.handleClick(event);
 	    };
+
+        window.onresize = () => {
+            this.draw();
+        };
     }
 
     end(winner, reason) {
@@ -806,6 +810,72 @@ class Game {
             overrideColors,
 	        this.currentTurn === WHITE
 	    );
+
+        this.updateCapturedPieces();
+    }
+
+    updateCapturedPieces() {
+        this.updateCapturedPiecesForColor(WHITE);
+        this.updateCapturedPiecesForColor(BLACK);
+    }
+
+    updateCapturedPiecesForColor(color) {
+        const { removedPieces } = this.board;
+
+        const pieces = removedPieces
+              .filter((piece) => piece.color === color);
+        const groups = this.groupByType(pieces);
+
+        const piecesDiv = document.getElementById(`${color}-captured-pieces`);
+
+        while (piecesDiv.lastChild) {
+            piecesDiv.removeChild(piecesDiv.lastChild);
+        }
+
+        Object.keys(groups)
+            .forEach((type) => {
+                piecesDiv.appendChild(
+                    this.makeCapturedPieceDiv(
+                        type, color, groups[type].length));
+            });
+    }
+
+    makeCapturedPieceDiv(type, color, count) {
+        const container = document.createElement('div');
+        container.className = 'captured-piece';
+
+        const pieceImage = document.createElement('img');
+        pieceImage.src = `../assets/${type}-${color}.svg`;
+
+        container.appendChild(pieceImage);
+
+        if (count > 1) {
+            const numberTag = document.createElement('div');
+            numberTag.className = 'number-tag';
+
+            const numberTagText = document.createElement('div');
+            numberTagText.className = 'number-tag-text';
+            numberTagText.innerHTML = count;
+
+            numberTag.appendChild(numberTagText);
+            container.appendChild(numberTag);
+        }
+
+        return container;
+    }
+
+    groupByType(list) {
+        const groups = {};
+
+        list.forEach((el) => {
+            if (groups[el.type]) {
+                groups[el.type].push(el);
+            } else {
+                groups[el.type] = [el];
+            }
+        });
+
+        return groups;
     }
 }
 
