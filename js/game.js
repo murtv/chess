@@ -485,7 +485,7 @@ class Board {
 	    this.pieces.splice(pieceIndex, 1);
 
         if (addToRemovedPieces) {
-            this.removedPieces.push(piece);
+            this.removedPieces.push(piece.clone());
         }
     }
 
@@ -537,20 +537,20 @@ class Board {
     }
 
     moveResultsInCheck(move) {
-        const { piece } = move;
-
         const boardCopy = this.clone();
-        const pieceCopy = boardCopy.findPiece(piece.square);
+        const pieceCopy = boardCopy.findPiece(move.piece.square);
 
-	    boardCopy.applyMove(move.clone());
-	    return boardCopy.isKingInCheck(piece.color);
+        const moveCopy = move.clone();
+        moveCopy.piece = pieceCopy;
+
+	    boardCopy.applyMove(moveCopy);
+	    return boardCopy.isKingInCheck(moveCopy.piece.color);
     }
 
     isKingInCheck(color) {
 	    return this.pieces
 	        .filter((piece) => piece.color !== color)
-	        .some((piece) => piece
-		          .getMoves(this)
+	        .some((piece) => piece.getMoves(this)
                   .some((move) => {
 		              const foundPiece = this.findPiece(move.to);
 
@@ -782,7 +782,7 @@ class Game {
 
         clearLoggedInUsers();
 
-	    window.location = 'index.html';
+	    window.location = 'index.php';
     }
 
     draw() {

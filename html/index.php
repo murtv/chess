@@ -10,8 +10,7 @@
         js('../js/accounts.js') .
         js('../js/validation.js') .
         js('../js/login.js')) .
-    body(
-        array(),
+    body(array(),
         nav() .
         main(
             container(

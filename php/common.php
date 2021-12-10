@@ -20,46 +20,44 @@ function nav() {
 }
 
 function container($content) {
-    return div(array('class', 'container'), $content);
+    return div('', 'container', $content);
 }
 
 function containerRight($content) {
-    return div(array('class', 'container-right'), $content);
+    return div('', 'container-right', $content);
 }
 
 function logo() {
-    return div(array('class', 'logo'), "Chess");
+    return div('', 'logo', "Chess");
 }
 
 function card($title, $content) {
-    return div(array('class', 'card'),
-               cardTitle($title) .
-               $content);
+    return div('',
+               'card',
+               cardTitle($title) . $content);
 }
 
 function cardTitle($title) {
-    return container(div(array('class', 'card-title'), $title));
+    return container(div('', 'card-title', $title));
 }
 
 function sectionTitle($title) {
-    return  div(array('class', 'section-title'), $title);
+    return  div('', 'section-title', $title);
 }
 
 function space() {
-    return div(array('class', 'vert-space-24'), "");
+    return div('', 'vert-space-24', "");
 }
 
 function field($name, $label, $type='text') {
-    return div(array('class', 'field-container'),
+    return div('', 'field-container',
         tag('label', array('class', 'field-label', 'for', $name), $label) .
     "<input class=\"field\" type=\"$type\" id=\"$name\" name=\"$name\" placeholder=\"$label\" />");
 }
 
 function error() {
-    return div(array(
-        'id', 'error',
-        'class', 'error-text',
-        'hidden', 'true'), '');
+    return div(
+        'error', 'error-text', '', array('hidden', 'true'));
 }
 
 function table($id, $cols) {
@@ -69,28 +67,36 @@ function table($id, $cols) {
         $headRow = $headRow . tag('th', array(), $col);
     }
 
-    return div(array('class', 'table-container'),
+    return div('', 'table-container',
             tag('table', array('id', $id),
                 tag('thead', array(),
                     tag('tr', array(), $headRow)) .
                 tag('tbody', array(), "")));
 }
 
-function div($extraAttrs, $content) {
-    return tag('div', $extraAttrs, $content);
+function div($id, $class, $content = '', $attrs = array()) {
+    return tag('div',
+        array_merge(
+            array('id', $id, 'class', $class),
+            $attrs),
+        $content);
 }
 
 function main($content) {
     return tag('main', array(), $content);
 }
 
-function button($title, $onClick) {
+function button($title, $onClick, $attrs = array()) {
     return tag('button',
-               array(
+               array_merge(array(
                    'class', 'button',
                    'onclick', $onClick
-               ),
+               ), $attrs),
                $title);
+}
+
+function canvas($id) {
+    return tag('canvas', array('id', $id), '');
 }
 
 function html($content) {

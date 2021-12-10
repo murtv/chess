@@ -30,8 +30,8 @@ const loginRules = {
     },
 };
 
+// authenticate both users, set localstorage values and send to the game page
 function handleLogin() {
-    // fetch the form values
     const fields = fetchFields(
         'email1', 'password1', 'email2', 'password2');
 
@@ -40,22 +40,18 @@ function handleLogin() {
         email2, password2
     } = fields;
 
-    // perform field level validation
     try {
         validate(fields, loginRules);
 
-        // player 1 and 2 must not be the same
         if (email1 === email2) {
-            throw Error('Make friends.'); // wisecrackery
+            throw Error('Make friends.');
         }
 
     } catch (error) {
-        showFormError(error.message); // if validation fails, show error div and abort
+        showFormError(error.message);
         return;
     }
 
-    // authenticate both  players
-    // note: we use two try-catch blocks so we can each players error message seperately
     try {
         authenticate({
             email: email1,
@@ -75,10 +71,8 @@ function handleLogin() {
         showFormError(`Player 2: ${error.message}`);
     }
 
-    // if we get here, that means validation was successful,
-    // set local storage values and send user to the game page
     localStorage.setItem('loggedInUser1', email1);
     localStorage.setItem('loggedInUser2', email2);
 
-    window.location = 'game.html';
+    window.location = 'game.php';
 }
