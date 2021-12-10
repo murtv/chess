@@ -20,7 +20,7 @@
                         field('name', 'Name') .
                         field('email', 'Email') .
                         field('phone', 'Phone') .
-                        field('password', 'Password')) .
+                        field('password', 'Password', 'password')) .
 
                         error() .
 

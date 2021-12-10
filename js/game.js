@@ -1,3 +1,6 @@
+// the main control flow of game resides in the handleClick method of Game
+// there is no main loop and the game is event driven
+
 // constants
 
 // colors
@@ -20,7 +23,7 @@ const PROMOTION = 'promotion';
 
 // some constants for drawing the board
 const BOARD_SIDE_LENGTH = window.innerHeight;
-const SQUARE_SIDE_LENGTH = BOARD_SIDE_LENGTH / 8;
+const SQUARE_SIDE_LENGTH = BOARD_SIDE_LENGTH / 8; // to divide the board in 8 rows and columns
 
 // square colors
 const WHITE_SQUARE_COLOR = 'lightgrey';
@@ -28,9 +31,8 @@ const BLACK_SQUARE_COLOR = '#3A3B3C';
 const LAST_MOVE_COLOR = '#808000';
 const SELECT_PIECE_COLOR = 'lightblue';
 
+// coordinate font color
 const COORDS_COLOR = 'black';
-
-const ALPHABET_STRING = 'abcdefgh';
 
 const otherColor = (color) =>
       color === WHITE ? BLACK : WHITE;
@@ -40,6 +42,9 @@ const squareEquals = (square1, square2) =>
       square1[0] === square2[0] &&
       square1[1] === square2[1];
 
+
+// base class for all moves
+// see applyMove() in Board to see how they are used
 class Move {
     constructor(type, piece, to) {
         this.type = type;
@@ -96,7 +101,21 @@ class Piece {
 	    this.square = square;
     }
 
+
+    // get the raw move pattern of a
+    // piece (without checking whether the moves results in a check)
+    getMoves(board) {}
+
+    // this is a hook will be used in certain subclasses to
+    // get notified when a piece is moved so that it can update some
+    // of its fields like hasMoved (see Pawn)
     onMove() {}
+
+
+    // make a copy of this object.
+    // used when running a move in a board copy to see if it results in a check
+    // see moveResultsInCheck in Board
+    clone() {}
 }
 
 class Pawn extends Piece {
@@ -106,6 +125,8 @@ class Pawn extends Piece {
 	    this.moved2SquaresLastTurn = false;
     }
 
+    // a pawn does not move symmetrically like other pieces
+    // so we have to define two sets of squares (white and black)
     getMoves(board) {
         const [file, rank] = this.square;
 
@@ -131,23 +152,31 @@ class Pawn extends Piece {
     compMoves(board, squares) {
 	    const moves = [];
 
+        // if the forward square is empty add it as a move
 	    if (!board.findPiece(squares.forward)) {
             moves.push(new Move(SIMPLE, this, squares.forward));
 
+            // if forward square is empty, the pawn hasn't
+            // moved and the square thats 2 squares ahead of us is empty add that as a move
 	        if (!this.hasMoved && !board.findPiece(squares.forward2)) {
 		        moves.push(new Move(SIMPLE, this, squares.forward2));
 	        }
 	    }
 
+        // if an enemy is present at the upper left square add that as a move
 	    const forwardLeftPiece = board.findPiece(squares.forwardLeft);
 	    if (forwardLeftPiece && forwardLeftPiece.color !== this.color) {
 	        moves.push(new Move(SIMPLE, this, squares.forwardLeft));
 	    }
 
+        // same check for the upper right square
 	    const forwardRightPiece = board.findPiece(squares.forwardRight);
 	    if (forwardRightPiece && forwardRightPiece.color !== this.color) {
 	        moves.push(new Move(SIMPLE, this, squares.forwardRight));
 	    }
+
+        // if an enemy pawn moved 2 squares last move and
+        // ended up on either side of this pawn create an en-passant move
 
 	    const leftPiece = board.findPiece(squares.left);
 	    if (leftPiece &&
@@ -170,6 +199,8 @@ class Pawn extends Piece {
 	    return this.withPromotionMoves(moves);
     }
 
+    // if a move results in the pawn being in the enemy's last rank,
+    // make it a promotion move
     withPromotionMoves(moves) {
         return moves.map((move) => {
 	        const rank = move.to[1];
@@ -210,60 +241,73 @@ class King extends Piece {
 	    this.hasMoved = false;
     }
 
-    getMoves(board) {
+    // create a move list and filter out squares that are not on
+    // the board  or are occupied by friendly pieces
+    // then add castling moves and return
+    getMoves(board, addCastlingMoves = true) {
 	    const [file, rank] = this.square;
 
 	    const moves = [
-	        [file, rank + 1],
-	        [file + 1, rank + 1],
-	        [file + 1, rank],
-	        [file + 1, rank - 1],
-
-	        [file, rank - 1],
-	        [file - 1, rank - 1],
-	        [file - 1, rank],
-	        [file - 1, rank + 1],
+	        [file, rank + 1], // forward
+	        [file + 1, rank + 1], // forward-right
+	        [file + 1, rank], // right
+	        [file + 1, rank - 1], //backward-right
+	        [file, rank - 1], // backward
+	        [file - 1, rank - 1], // backward-left
+	        [file - 1, rank], // left
+	        [file - 1, rank + 1], // forward-left
 	    ]
 	          .filter(square => board.canOccupy(square, this.color))
               .map((square) => new Move(SIMPLE, this, square));
 
-	    const castlingMoves = this.getCastlingMoves(board);
+	    const castlingMoves = addCastlingMoves ?
+              this.getCastlingMoves(board) :
+              [];
 
 	    return [...moves, ...castlingMoves];
     }
 
-    getCastlingMoves(board, squares) {
+    getCastlingMoves(board) {
         if (this.hasMoved) return [];
+
+        // cannot castle if in check
+        if (board.isKingInCheck(this.color, false)) {
+            return [];
+        }
 
         const [file, rank] = this.square;
 
 	    const moves = [];
 
-	    const kingSidePiece = board.findPiece([file + 1, rank]);
-	    const kingSide2Piece = board.findPiece([file + 2, rank]);
 	    const kingSideRook = board.findPiece([file + 3, rank]);
 
-	    if (!kingSidePiece &&
-	        !kingSide2Piece &&
+        // if the immediate square on the kingside
+        // and the square two squares away are vacant
+        // and if a rook is present on the kingside that hasn't moved
+        // and if a king does't "through" a check
+        // the king can castle
+	    if (!board.findPiece([file + 1, rank]) &&
+	        !board.findPiece([file + 2, rank]) &&
+            !board.moveResultsInCheck(new CastleMove(this, [file + 2, rank])) &&
 	        kingSideRook &&
 	        !kingSideRook.hasMoved) {
 
             moves.push(new CastleMove(
                 this,
-                [file + 2, rank],
-                [file + 3, rank],
-                [file + 1, rank]
+                [file + 2, rank], // where the king should end up
+                [file + 3, rank], // where the kingside rook is
+                [file + 1, rank] // where the kingside rook should end up
             ));
 	    }
 
-	    const queenSidePiece = board.findPiece([file - 1, rank]);
-	    const queenSide2Piece = board.findPiece([file - 2, rank]);
-	    const queenSide3Piece = board.findPiece([file - 3, rank]);
 	    const queenSideRook = board.findPiece([file - 4, rank]);
 
-	    if (!queenSidePiece &&
-	        !queenSide2Piece &&
-	        !queenSide3Piece &&
+        // same as the checks for kingside but on queenside
+        // we have to check for and additional square
+	    if (!board.findPiece([file - 1, rank]) &&
+	        !board.findPiece([file - 2, rank]) &&
+	        !board.findPiece([file - 3, rank]) &&
+            !board.moveResultsInCheck(new CastleMove(this, [file - 2, rank])) &&
 	        queenSideRook &&
 	        !queenSideRook.hasMoved) {
 
@@ -293,8 +337,10 @@ class King extends Piece {
     }
 }
 
-// provides a utility function to create a list of moves for pieces that move in "lines" (that is: the bishop, rook and queen)
+// provides a utility function to create a list of moves for the bishop, rook and queen
 let lineMoveMixin = Base => class extends Base {
+
+    // keep adding squares in a some direction until a piece is hit
     makeMoveList(piece, board, nextSquare) {
 	    const { square, color } = piece;
 
@@ -326,6 +372,8 @@ let lineMoveMixin = Base => class extends Base {
 }
 
 let diagonalMoveMixin = Base => class extends Base {
+
+    // get moves in diagonal directions (bishop)
     diagonalMoves(board) {
 	    const forwardLeftMoves = super.makeMoveList(
 	        this, board,
@@ -353,6 +401,8 @@ let diagonalMoveMixin = Base => class extends Base {
 };
 
 let crossMoveMixin = Base => class extends Base {
+
+    // get moves in a plus pattern (rook)
     crossMoves(board) {
 	    const forwardMoves = super.makeMoveList(
 	        this, board,
@@ -385,6 +435,7 @@ crossMoveMixin(diagonalMoveMixin(lineMoveMixin(Piece))) {
 	    super(QUEEN, color, square);
     }
 
+    // the queen's move pattern is the combination of the bishop's and rook's move patterns
     getMoves(board) {
 	    return [
 	        ...this.crossMoves(board),
@@ -430,7 +481,6 @@ class Knight extends Piece {
 	        [file - 1, rank + 2],
 	        [file + 1, rank + 2],
 	        [file + 2, rank + 1],
-
 	        [file - 2, rank - 1],
 	        [file - 1, rank - 2],
 	        [file + 1, rank - 2],
@@ -489,11 +539,14 @@ class Board {
         }
     }
 
+    // filter out moves that results in a check on self
     getLegalMoves(piece) {
         return piece.getMoves(this)
 		    .filter((move) => !this.moveResultsInCheck(move));
     }
 
+    // do some special tasks for special move types,
+    // then record the move and actually move the piece (this is common to all moves)
     applyMove(move) {
         const { type, piece, to } = move;
 
@@ -528,6 +581,7 @@ class Board {
 
         piece.onMove(move);
 
+        // if there is an enemy piece on the square we are moving to, capture it
         const pieceOnTo = this.findPiece(move.to);
 	    if (pieceOnTo && pieceOnTo.color !== piece.color) {
 		    this.removePiece(pieceOnTo, true);
@@ -536,6 +590,8 @@ class Board {
 	    move.piece.square = move.to;
     }
 
+    // copies the board and applies the move in that copy to check whether
+    // a move would result in a check
     moveResultsInCheck(move) {
         const boardCopy = this.clone();
         const pieceCopy = boardCopy.findPiece(move.piece.square);
@@ -544,13 +600,15 @@ class Board {
         moveCopy.piece = pieceCopy;
 
 	    boardCopy.applyMove(moveCopy);
-	    return boardCopy.isKingInCheck(moveCopy.piece.color);
+	    return boardCopy.isKingInCheck(moveCopy.piece.color, false);
     }
 
-    isKingInCheck(color) {
+    // if any of the enemy pieces has some move that
+    // ends up capturing the opposite king, that king is in check
+    isKingInCheck(color, withCastlingMoves = true) {
 	    return this.pieces
 	        .filter((piece) => piece.color !== color)
-	        .some((piece) => piece.getMoves(this)
+	        .some((piece) => piece.getMoves(this, withCastlingMoves) // the king needs the latter argument other pieces will ignore it
                   .some((move) => {
 		              const foundPiece = this.findPiece(move.to);
 
@@ -564,6 +622,7 @@ class Board {
 		          }));
     }
 
+    // if every move we can make still ends up with our king in check we are checkmated
     isKingInCheckMate(color) {
 	    if (!this.isKingInCheck(color)) return false;
 
@@ -573,7 +632,11 @@ class Board {
 		           .every((move) => this.moveResultsInCheck(move)));
     }
 
+    // if we are not in check and none of our pieces have any legal moves to make,
+    // we are in a stalemate
     isInStaleMate(color) {
+        if (this.isKingInCheck(color)) return false;
+
 	    return this.pieces
 	        .filter((piece) => piece.color === color)
 	        .every((piece) => piece.getMoves(this)
@@ -581,6 +644,7 @@ class Board {
 		           .length === 0);
     }
 
+    // squares that are either vacant or occupied by enemies can be occupied
     canOccupy(square, byColor) {
 	    const piece = this.findPiece(square);
 
@@ -604,6 +668,7 @@ class Board {
 	    return board;
     }
 
+    // check if a square is on the board
     static squareExists(square) {
 	    const [file, rank] = square;
 
@@ -614,6 +679,7 @@ class Board {
     }
 }
 
+// default board setup
 const PIECES = [
     new Pawn(WHITE, [1, 2]),
     new Pawn(WHITE, [2, 2]),
@@ -679,37 +745,41 @@ class Game {
 	    window.onclick = (event) => {
 	        this.handleClick(event);
 	    };
-
-        window.onresize = () => {
-            this.draw();
-        };
     }
 
     end(winner, reason) {
 	    this.inputEnabled = false;
 
+        // if we have no winner, the game was a draw
 	    if (winner) {
 	        swal(`${winner === WHITE ? 'White' : 'Black'} wins by: ${reason}.`)
 		        .then(() => this.updateRankingsAndGoBack(winner));
 	    } else {
 	        swal(`Draw by: ${reason}.`)
-		        .then(() => this.updateRankingsAndGoBack(winner));
+		        .then(() => this.updateRankingsAndGoBack(null));
 	    }
     }
 
     handleClick(event) {
 	    if (!this.inputEnabled) return;
 
+        // get the square under the mouse x and y coords
 	    const { clientX, clientY } = event;
 	    const clickedSquare = this.getSquareForCoords(
 	        clientX, clientY, this.currentTurn);
 
+        if (!clickedSquare) return;
+
 	    const piece = this.board.findPiece(clickedSquare);
 
+        // if we clicked a friendly piece, set that piece as the selected piece
+        // and compute its legal moves
 	    if (piece && piece.color === this.currentTurn) {
 	        this.selectedPiece = piece;
 	        this.legalMoves = this.board.getLegalMoves(piece);
 	    } else if (this.selectedPiece) {
+            // if a piece has already been selected,
+            // the clicked square is the square of the move. apply it and switch turns.
 	        const selectedMove = this.findLegalMove(clickedSquare);
 
 	        if (selectedMove) {
@@ -718,7 +788,10 @@ class Game {
 	        }
 	    }
 
+
 	    this.draw();
+
+        // after every move we have to perform these checks
 
 	    if (this.board.isKingInCheckMate(this.currentTurn)) {
 	        this.end(otherColor(this.currentTurn), 'Checkmate');
@@ -739,6 +812,8 @@ class Game {
             .find((move) => squareEquals(move.to, square)) || null;
     }
 
+    // loop over the ranks and for every rank, loop over the files,
+    // if x and y coords fall in that rank and file return it
     getSquareForCoords(x, y, currentTurn) {
 	    for (let i = 0; i <= 8; i++) {
 
@@ -766,6 +841,7 @@ class Game {
 	    return null;
     }
 
+    // update score, clear users, and send back to the rankings page
     updateRankingsAndGoBack(winner) {
 	    const { user1, user2 } = this.users;
 
@@ -782,18 +858,20 @@ class Game {
 
         clearLoggedInUsers();
 
-	    window.location = 'index.php';
+	    window.location = 'rankings.php';
     }
 
     draw() {
         const overrideColors = [];
 
+        // if we have a selected piece, the square of the piece should be highlighted
         if (this.selectedPiece) {
             overrideColors.push(
                 { color: SELECT_PIECE_COLOR, square: this.selectedPiece.square }
             );
         }
 
+        // highlight the from and to squares of the last move
         const { moveHistory } = this.board;
         if (moveHistory.length > 0) {
             const lastMove = moveHistory[moveHistory.length - 1];
@@ -828,10 +906,12 @@ class Game {
 
         const piecesDiv = document.getElementById(`${color}-captured-pieces`);
 
+        // empty the div
         while (piecesDiv.lastChild) {
             piecesDiv.removeChild(piecesDiv.lastChild);
         }
 
+        // for every type add a captured piece image
         Object.keys(groups)
             .forEach((type) => {
                 piecesDiv.appendChild(
@@ -849,6 +929,7 @@ class Game {
 
         container.appendChild(pieceImage);
 
+        // if count > 1 add a number tag on the piece image
         if (count > 1) {
             const numberTag = document.createElement('div');
             numberTag.className = 'number-tag';
@@ -879,6 +960,8 @@ class Game {
     }
 }
 
+// responsible for managing the canvas context and drawing
+// the state of the board
 class Drawer {
     constructor(canvasId) {
 	    this.canvas = document.getElementById(canvasId);
@@ -907,6 +990,7 @@ class Drawer {
 	    for (let i = 0; i <= 8; i++) {
 	        for (let j = 0; j <= 8; j++) {
 
+                // get the opposite square if the board is flipped
                 const square = isFlipped ?
                       [j + 1, 8 - i] :
                       [8 - j, i + 1];
@@ -914,9 +998,11 @@ class Drawer {
                 const overrideColor = overrideColors
                       .find((color) => squareEquals(color.square, square)) || null;
 
+                // is a color override is present use that instead of the normal board colors
                 if (overrideColor) {
                     this.context.fillStyle = overrideColor.color;
                 } else {
+                    // this creates the alternating color pattern of the board
                     if (i % 2 === 0) {
 		                this.context.fillStyle = j % 2 === 0 ?
 			                WHITE_SQUARE_COLOR :
@@ -937,6 +1023,7 @@ class Drawer {
 	    }
     }
 
+    // marks the ranks and files on the board
     drawCoords(isFlipped) {
         this.context.fillStyle = COORDS_COLOR;
         this.context.font = 'bold 24px sans-serif';
@@ -949,19 +1036,23 @@ class Drawer {
             }
         }
 
+        // we use alphabet string to get a char for a number
+        // (because files are marked by letters)
+        const alphabetString = 'abcdefgh';
         for (let i = 1; i <= 8; i++) {
             if (isFlipped) {
-                this.context.fillText(`${ALPHABET_STRING.charAt(i - 1)}`,
+                this.context.fillText(`${alphabetString.charAt(i - 1)}`,
                                       (i * SQUARE_SIDE_LENGTH) - 24,
                                       BOARD_SIDE_LENGTH - 8);
             } else {
-                this.context.fillText(`${ALPHABET_STRING.charAt(8 - i)}`,
+                this.context.fillText(`${alphabetString.charAt(8 - i)}`,
                                       (i * SQUARE_SIDE_LENGTH) - 24,
                                       BOARD_SIDE_LENGTH - 8);
             }
         }
     }
 
+    // the x and y positions must be mirrored if the board is flipped
     drawPieces(pieces, isFlipped) {
 	    pieces.forEach((piece) => {
 	        const { type, color, square } = piece;
@@ -985,6 +1076,7 @@ class Drawer {
 	    });
     }
 
+    // the x and y positions must be mirrored if the board is flipped
     drawLegalMoveCircles(legalMoveSquares, isFlipped) {
 	    legalMoveSquares.forEach((square) => {
 	        const [file, rank] = square;
@@ -1025,6 +1117,7 @@ class Drawer {
     }
 }
 
+// a map of the piece types to their asset files
 const pieceImageMap = {
     [WHITE]: {
 	    [PAWN]: '../assets/pawn-white.svg',
@@ -1044,6 +1137,7 @@ const pieceImageMap = {
     }
 };
 
+// get logged in users from local storage
 function fetchLoggedInUsers() {
     const user1Email = localStorage.getItem('loggedInUser1');
     const user2Email = localStorage.getItem('loggedInUser2');
@@ -1066,6 +1160,7 @@ function clearLoggedInUsers() {
     localStorage.removeItem('loggedInUser2');
 }
 
+// sets the text that shows which player is which color
 function setUserColorText(users) {
     const { user1, user2 } = users;
 
@@ -1080,18 +1175,9 @@ function setUserColorText(users) {
 
 let game;
 
+// fetch the users and begin the game
 function init() {
-    // const users = fetchLoggedInUsers();
-    //
-
-    const users = {
-        user1: {
-            email: 'email'
-        },
-        user2: {
-            email: 'email'
-        }
-    };
+    const users = fetchLoggedInUsers();
 
     if (users) {
 	    setUserColorText(users);
@@ -1101,10 +1187,18 @@ function init() {
     } else {
 	    swal('Users not logged in.')
             .then(() => {
-	            window.location = 'index.html';
+	            window.location = 'index.php';
 	        });
     }
 }
+
+// beating players with higher scores should get us more points
+// and vice versa
+function calcScore(winnerScore, loserScore) {
+    return winnerScore + (winnerScore / loserScore) * 10;
+}
+
+// these are handlers for buttons
 
 function handleResign() {
     game.end(otherColor(game.currentTurn), 'Resignation');
@@ -1112,8 +1206,4 @@ function handleResign() {
 
 function handleDraw() {
     game.end(null, 'Mutual agreement');
-}
-
-function calcScore(winnerScore, loserScore) {
-    return winnerScore + (winnerScore / loserScore) * 10;
 }

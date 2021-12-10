@@ -30,7 +30,9 @@ const loginRules = {
     },
 };
 
-// authenticate both users, set localstorage values and send to the game page
+// authenticate both users, set localstorage values and send to the game page.
+// note: we authenticate both users in seperate try-catch blocks
+// to get more specific error messages
 function handleLogin() {
     const fields = fetchFields(
         'email1', 'password1', 'email2', 'password2');
@@ -69,6 +71,7 @@ function handleLogin() {
         });
     } catch (error) {
         showFormError(`Player 2: ${error.message}`);
+        return;
     }
 
     localStorage.setItem('loggedInUser1', email1);

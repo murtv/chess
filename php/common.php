@@ -1,5 +1,7 @@
 <?php
+// composable and nestable functions to help avoid code duplication
 
+// the main nav bar (links will never change)
 function nav() {
     $links = array(
         array("Login", "./index.php"),
@@ -30,6 +32,7 @@ function containerRight($content) {
 function logo() {
     return div('', 'logo', "Chess");
 }
+
 
 function card($title, $content) {
     return div('',
@@ -125,6 +128,7 @@ function body($attrs, $content) {
     return tag('body', $attrs, $content);
 }
 
+// just outputs a tag, (helps avoid bugs from typos)
 function tag($name, $attrs, $content) {
     $attrString = attrs($attrs);
     return "<$name $attrString> $content </$name>";

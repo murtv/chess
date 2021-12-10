@@ -10,6 +10,7 @@ function initRankingsTable() {
         const { name, score } = user;
         const rank = index + 1 // use the index as rank, but add 1 since index starts with 0
 
+        console.log('called');
         insertTableRow(table, [rank, name, score]);
     });
 }
@@ -17,7 +18,7 @@ function initRankingsTable() {
 // keys to ignore when looping over all local storage fields (we only want user accounts)
 const keysToIgnore = ['loggedInUser1', 'loggedInUser2'];
 
-// get all local storage keys, remove keys to ignore,
+// get all local storage keys, filter out keys to ignore,
 // map the remaning keys to their values, then map those values to parsed objects
 function fetchUsers() {
     return Object.keys(localStorage)
@@ -36,7 +37,7 @@ function insertTableRow(table, cells) {
     });
 }
 
-// callback to pass in the array sort function
+// function to pass in the array sort function
 function sortByScore(userA, userB) {
     if (userA.score > userB.score) return -1;
     if (userA.score < userB.score) return 1;

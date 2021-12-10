@@ -30,20 +30,19 @@ const signUpRules = {
     },
 };
 
+
+// if signup is successful, send to the login page
 function handleSignUp() {
     try {
-        // fetch form values
         const fields = fetchFields(
             'name', 'email', 'phone', 'password');
 
-        // vaidate fields against the sign up schema
         validate(fields, signUpRules);
 
         createAccount(fields);
 
-        // if account creation is successful, send user to the login page
-        window.location = 'index.html';
+        window.location = 'index.php';
     } catch (error) {
-        showFormError(error.message); // show error div
+        showFormError(error.message);
     }
 }

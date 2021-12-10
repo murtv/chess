@@ -1,3 +1,6 @@
+// this file defines reusable, composable rules that are used to build a validation schema
+// see login.js or signup.js for the schema structure
+//
 function isRequired(options = {}) {
     const { error } = options;
 
@@ -11,7 +14,7 @@ function isEmail(options = {}) {
     const { error } = options;
 
     return {
-        isValid: (value) => emailRegex.test(value),
+        isValid: (value) => new RegExp(emailRegex).test(value),
         getError: (label) => error || `${label} is not valid.`
     };
 }
@@ -34,6 +37,7 @@ function isMinLength(options = {}) {
     };
 }
 
+// validates a field object against a schema object
 function validate(fields, schema) {
     // for every field, every rule must pass
     for (const [field, value] of Object.entries(fields)) {
