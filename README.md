@@ -24,4 +24,4 @@ This is a two-player chess game meant to be played on the same computer. Most ru
 
 ## Getting Started
 
-Serve the root folder and go to /html/index.php to go the login page.
+Serve the root folder and go to /html/index.php.
